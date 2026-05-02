@@ -6,17 +6,25 @@ import cors from 'cors';
 const app = express();
 const server = createServer(app);
 
+const CORS_ORIGIN = (process.env.CORS_ORIGIN || 'http://localhost:5174')
+    .split(',')
+    .map((s) => s.trim());
+
 const io = new Server(server, {
     cors: {
-        origin: 'http://localhost:5174',
+        origin: CORS_ORIGIN,
         methods: ['GET', 'POST']
     }
 });
 
-app.use(cors());
+app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json());
 
 const users = new Map();
+
+app.get('/health', (_req, res) => {
+    res.json({ status: 'ok', variant: 'v1-discord', users: users.size });
+});
 
 io.on('connection', (socket) => {
     console.log(`[V1 Discord] User connected: ${socket.id}`);
@@ -48,4 +56,8 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3001, () => console.log('🎮 [V1 Discord] Server: http://localhost:3001'));
+const PORT = process.env.PORT || 3001;
+server.listen(PORT, () => {
+    console.log(`[V1 Discord] Server running on port ${PORT}`);
+    console.log(`[V1 Discord] Allowed CORS: ${CORS_ORIGIN.join(', ')}`);
+});
